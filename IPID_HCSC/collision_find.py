@@ -7,7 +7,7 @@ from scapy.layers.inet import *
 from scapy.layers.l2 import *
 
 
-class Collision_Finder_2:
+class Collision_Finder:
 
     def __init__(self, server_mac_addr, owned_prefix,
                  client_ip='10.10.100.1', server_ip='10.10.100.2',

