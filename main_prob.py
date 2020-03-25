@@ -10,7 +10,7 @@ if __name__ == '__main__':
     own_ip_prefix = '10.10.0.0'
 
     collision = Collision_Prob(attack_target_server=server_ip, attack_target_network=own_ip_prefix,
-                               bind_iface_name=attack_bind_if, verbose=True)
+                               bind_iface_name=attack_bind_if, block_size=200, num_thread=8, verbose=True)
     collision.run()
     collision.wait_for_res()
 

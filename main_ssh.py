@@ -19,9 +19,10 @@ if __name__ == '__main__':
     collision_ip = '10.10.8.150'
 
     connection = Connection_Finder(forge_ip=collision_ip, client_ip=client_ip, server_ip=server_ip,
-                                   server_port=server_port, bind_if_name=attack_bind_if)
+                                   server_port=server_port, block_size=500, num_thread=2, bind_if_name=attack_bind_if)
     connection.run()
     client_port = connection.result
+    exit(0)
 
     if client_port == -1:
         print('No Connection Found.')

