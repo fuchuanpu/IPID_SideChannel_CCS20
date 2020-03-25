@@ -26,10 +26,10 @@ from scapy.layers.l2 import *
 """
 
 forge_ip_prefix = '10.10.'                  # used for construct a address pool
-victim_ip = '10.10.100.1'                   # victim ip address
-server_ip = '10.10.100.2'                   # server ip address
-server_mac_addr = '00:0c:29:20:f4:8c'       # mac address of server used for ARP poison
-my_if_name = 'ens33'                        # bind one ethernet interface
+victim_ip = '182.92.129.182'                # victim ip address
+server_ip = '172.21.0.16'                   # server ip address
+server_mac_addr = '52:54:00:df:b4:7e'       # mac address of server used for ARP poison
+my_if_name = 'eth0'                        # bind one ethernet interface
 my_mac_addr = get_if_hwaddr(my_if_name)     # mac address of attacker
 z_payload = b''                             # full-zero byte string used for padding
 NUM_T = 20                                  # number of checking thread
