@@ -30,7 +30,7 @@ class Connection_Finder:
 
     DEFAULT_TCP_INVALID_RATELIMIT = 0.5
 
-    def __init__(self, forge_ip, server_mac, server_port, bind_if_name='ens33',
+    def __init__(self, forge_ip, server_port, server_mac='', bind_if_name='ens33',
                  client_ip='10.10.100.1', server_ip='10.10.100.2', num_thread=5,
                  block_size=150, start_port=32767, end_port=61000, num_check=3, verbose=False):
         self.forge_ip = forge_ip

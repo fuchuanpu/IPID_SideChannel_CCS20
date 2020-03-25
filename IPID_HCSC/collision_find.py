@@ -9,7 +9,7 @@ from scapy.layers.l2 import *
 
 class Collision_Finder:
 
-    def __init__(self, server_mac_addr, owned_prefix,
+    def __init__(self, owned_prefix, server_mac_addr='',
                  client_ip='10.10.100.1', server_ip='10.10.100.2',
                  bind_iface='ens33', num_thread=20, verbose=False):
         prefix = owned_prefix[:owned_prefix.find('.', owned_prefix.find('.') + 1) + 1]

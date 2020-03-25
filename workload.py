@@ -1,3 +1,4 @@
+# coding=utf-8
 import time
 import psutil
 import json
@@ -31,3 +32,4 @@ if __name__ == '__main__':
         f.write(jstr)
 
     print('Finish.')
+

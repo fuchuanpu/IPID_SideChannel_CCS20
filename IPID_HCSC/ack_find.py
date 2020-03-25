@@ -14,7 +14,7 @@ TCP_INVALID_RATELIMIT = 0.5
 
 class Ack_Finder:
 
-    def __init__(self, forge_ip, client_port, server_port, seq_in_win, server_mac, bind_if_name='ens33',
+    def __init__(self, forge_ip, client_port, server_port, seq_in_win, server_mac='', bind_if_name='ens33',
                  client_ip='10.10.100.1', server_ip='10.10.100.2', block_size=80100):
 
         self.forge_ip = forge_ip

