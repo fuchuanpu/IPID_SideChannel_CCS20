@@ -32,7 +32,7 @@ class Connection_Finder:
 
     def __init__(self, forge_ip, server_port, server_mac='', bind_if_name='ens33',
                  client_ip='10.10.100.1', server_ip='10.10.100.2', num_thread=5,
-                 block_size=150, start_port=32767, end_port=61000, num_check=3, verbose=False):
+                 block_size=150, start_port=32767, end_port=61000, num_check=2, reverse=False, verbose=False):
         self.forge_ip = forge_ip
         self.victim_ip = client_ip
         self.server_ip = server_ip
@@ -55,10 +55,11 @@ class Connection_Finder:
         self.__semaphore = threading.Semaphore(1)
         self.__task_list = []
         self.start_port = start_port
-        self.__current_port = end_port
+        self.__current_port = end_port if reverse else start_port
         self.end_port = end_port
         self.__stop = False
         self.result = -1
+        self.reverse = reverse
 
         self.send_n = 0
         self.send_byte = 0
@@ -143,13 +144,22 @@ class Connection_Finder:
             list_p = port_list
             self.__semaphore.release()
         else:
-            e_p = self.__current_port
-            self.__current_port -= self.BLOCK - len(port_list)
-            current_port = max(self.start_port, self.__current_port)
-            s_p = current_port
-            if current_port == self.start_port:
-                self.__stop = True
-            self.__semaphore.release()
+            if self.reverse:
+                e_p = self.__current_port
+                self.__current_port -= self.BLOCK - len(port_list)
+                current_port = max(self.start_port, self.__current_port)
+                s_p = current_port
+                if current_port == self.start_port:
+                    self.__stop = True
+                self.__semaphore.release()
+            else:
+                s_p = self.__current_port
+                self.__current_port += self.BLOCK - len(port_list)
+                current_port = min(self.end_port, self.__current_port)
+                e_p = current_port
+                if current_port == self.end_port:
+                    self.__stop = True
+                self.__semaphore.release()
 
             list_p = list(range(s_p, e_p))
             list_p.extend(port_list)

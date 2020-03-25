@@ -36,6 +36,7 @@ if __name__ == '__main__':
 
     if seq_in_win == -1:
         print('Seq Find Miss')
+        jstr = json.dumps({'res':0})
     else:
         ack = Ack_Finder(forge_ip=collision_ip, client_ip=client_ip, server_ip=server_ip,
                          server_port=server_port, client_port=client_port, seq_in_win=seq_in_win,
@@ -51,4 +52,19 @@ if __name__ == '__main__':
         print('Time: ' + str(connection.cost_time + seq.cost_time + ack.cost_time) + ' (s)')
         print('Packets: ' + str(connection.send_n + seq.send_n + ack.send_n))
         print('Bytes: ' + str(connection.send_byte + seq.send_byte + ack.send_byte) + ' (bytes)')
+        res_d = {}
+        res_d['res'] = 1
+        res_d['connection'] = {'time': connection.cost_time, 'send_n': connection.send_n, 'send_byte': connection.send_n}
+        res_d['seq'] = {'time': seq.cost_time, 'send_n': seq.send_n, 'send_byte': seq.send_n}
+        res_d['ack'] = {'time': ack.cost_time, 'send_n': ack.send_n, 'send_byte': ack.send_n}
+        jstr = json.dumps(res_d)
+
+    path = './bgp_res'
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+    filelist = os.listdir(path)
+
+    with open(path + '/bgp_res_' + str(len(filelist))+ '.json', 'w') as f:
+        f.write(jstr)
 
