@@ -157,6 +157,7 @@ def check_new_list(list_p):
                      iface=my_if_name, count=1 + C, timeout=2, started_callback=
                      lambda: send(send_list, iface=my_if_name, verbose=False))
         semaphore_ipid.release()
+        print(len(pkts))
         if len(pkts) != 1 + C:
             time.sleep(sleep_time)
         else:

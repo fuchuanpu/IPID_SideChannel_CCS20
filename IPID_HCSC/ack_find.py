@@ -265,7 +265,15 @@ class Ack_Finder:
         s_t = time.time()
         print('------ ACK/SEQ Find ------')
         self.find_ack_challenge_win()
+        self.time1 = time.time() - s_t
+        self.send_n1 = self.send_n
+        self.send_byte1 = self.send_byte
+        
         self.find_left_bound_ack()
+        self.time2 = time.time() - s_t
+        self.send_n2 = self.send_n
+        self.send_byte2 = self.send_byte
+        
         self.find_seq()
         e_t = time.time()
         self.cost_time = e_t - s_t
@@ -285,6 +293,11 @@ class Ack_Finder:
         print('------ SEQ Find ------')
         s_t = time.time()
         self.find_ack_challenge_win()
+        self.time1 = time.time() - s_t
+        self.send_n1 = self.send_n
+        self.send_byte1 = self.send_byte
+
+        
         self.find_seq()
         e_t = time.time()
         self.cost_time = e_t - s_t
@@ -302,7 +315,15 @@ class Ack_Finder:
         s_t = time.time()
         print('------ ACK/SEQ Find ------')
         self.find_ack_challenge_win()
+        self.time1 = time.time() - s_t
+        self.send_n1 = self.send_n
+        self.send_byte1 = self.send_byte
+
         self.find_left_bound_ack()
+        self.time2 = time.time() - s_t
+        self.send_n2 = self.send_n
+        self.send_byte2 = self.send_byte
+
         self.find_seq()
         e_t = time.time()
         self.cost_time = e_t - s_t

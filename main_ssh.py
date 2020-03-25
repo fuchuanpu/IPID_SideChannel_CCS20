@@ -58,7 +58,8 @@ if __name__ == '__main__':
         res_d['res'] = 1
         res_d['connection'] = {'time': connection.cost_time, 'send_n': connection.send_n, 'send_byte': connection.send_n}
         res_d['seq'] = {'time': seq.cost_time, 'send_n': seq.send_n, 'send_byte': seq.send_n}
-        res_d['ack'] = {'time': ack.cost_time, 'send_n': ack.send_n, 'send_byte': ack.send_n}
+        res_d['ack'] = {'time': ack.cost_time, 'send_n': ack.send_n, 'send_byte': ack.send_n, 
+                        'time1': ack.time1, 'send_n1': ack.send_n1, 'send_byte1': ack.send_byte1}
         jstr = json.dumps(res_d)
 
     path = './ssh_res'
