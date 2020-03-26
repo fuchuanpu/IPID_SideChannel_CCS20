@@ -7,6 +7,8 @@ import os
 if __name__ == '__main__':
     cpu_utl = []
     mem_utl = []
+    max_cpu = 0
+    max_mem = 0
     print('start: ')
     try:
         while True:
@@ -14,6 +16,8 @@ if __name__ == '__main__':
             mem = psutil.virtual_memory()
             print(cpu)
             print(mem.percent)
+            max_cpu = max(max_cpu, cpu)
+            max_mem = max(max_mem, mem.percent)
             cpu_utl.append(cpu)
             mem_utl.append(mem.percent)
             time.sleep(1)
@@ -26,7 +30,7 @@ if __name__ == '__main__':
 
     filelist = os.listdir(path)
 
-    dic = {'cpu':cpu_utl, 'mem':mem_utl}
+    dic = {'cpu':cpu_utl, 'mem':mem_utl, 'max_cpu':max_cpu, 'max_mem':max_mem}
     jstr = json.dumps(dic)
     with open(path + '/data_' + str(len(filelist))+ '.json', 'w') as f:
         f.write(jstr)
