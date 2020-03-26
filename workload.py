@@ -30,7 +30,8 @@ if __name__ == '__main__':
 
     filelist = os.listdir(path)
 
-    dic = {'cpu':cpu_utl, 'mem':mem_utl, 'max_cpu':max_cpu, 'max_mem':max_mem}
+    dic = {'cpu':cpu_utl, 'mem':mem_utl, 'max_cpu':max_cpu, 'max_mem':max_mem, 
+           'avg_cpu':sum(cpu_utl) / len(cpu_utl), 'avg_mem':sum(mem_utl) / len(mem_utl)}
     jstr = json.dumps(dic)
     with open(path + '/data_' + str(len(filelist))+ '.json', 'w') as f:
         f.write(jstr)
