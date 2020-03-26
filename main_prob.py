@@ -17,7 +17,8 @@ if __name__ == '__main__':
     collision.run()
     collision.wait_for_res()
 
-    jstr = json.dumps({'res': collision.result})
+    jstr = json.dumps({'res': collision.result, 'time': collision.cost_time,
+                       'send_n': collision.send_n, 'send_byte': collision.send_byte})
     path = './prob_res'
     if not os.path.exists(path):
         os.makedirs(path)
