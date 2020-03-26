@@ -11,8 +11,8 @@ if __name__ == '__main__':
 
     attack_bind_if = 'eth0'
     
-    own_ip_prefix = '101.80.0.0'
-    n_size = 20
+    own_ip_prefix = '209.140.128.0'
+    n_size = 14
 
     collision = Collision_Prob(attack_target_server=server_ip, attack_target_network=own_ip_prefix, net_size=n_size,
                                bind_iface_name=attack_bind_if, block_size=200, num_thread=8, verbose=True)
