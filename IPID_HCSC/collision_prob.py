@@ -31,7 +31,7 @@ class Task:
 class Collision_Prob:
 
     def __init__(self, attack_target_server='10.10.100.2', bind_iface_name='ens33',
-                 attack_target_network='20.0.0.0', net_type='B', num_thread=5, block_size=100,
+                 attack_target_network='20.0.0.0', net_size=16, num_thread=5, block_size=100,
                  threshold_hit=2, verbose=False):
         self.server_ip = attack_target_server
         self.my_if_name = bind_iface_name
@@ -52,10 +52,10 @@ class Collision_Prob:
 
         self.__task_list = []
 
-        d_net_type = {'A': 24, 'a': 24, 'B': 16, 'b': 16, 'C': 8, 'c': 8}
+        # d_net_type = {'A': 24, 'a': 24, 'B': 16, 'b': 16, 'C': 8, 'c': 8}
         self.__start_point = socket.ntohl(struct.unpack("I",socket.inet_aton(str(self.net_work_num)))[0])
         self.__current_point = self.__start_point
-        self.__end_point = self.__start_point + (1 << d_net_type[net_type]) - 1
+        self.__end_point = self.__start_point + (1 << net_size) - 1
         self.__stop = False
         self.result = []
 
@@ -197,8 +197,12 @@ class Collision_Prob:
 
     def wait_for_res(self):
         ts = time.time()
-        while not self.__stop:
-            time.sleep(1)
+        try:
+            while not self.__stop:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            self.__stop = True
+
         te = time.time()
         print('------ Collision Find ------')
         print('Target Server: ' + self.server_ip)
