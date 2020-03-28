@@ -11,11 +11,22 @@ from IPID_HCSC.ack_find import *
 
 if __name__ == '__main__':
     
-    server_ip = '172.21.0.12'
     server_port = 22
+    #server_ip = '172.21.0.12'
+    #client_ip = '182.92.129.182'
+    #collision_ip = '10.10.5.12'
+    
+    #server_ip = '172.21.0.82'
+    #client_ip = '182.92.129.182'
+    #collision_ip = '10.10.7.25'
+    
+    #server_ip = '172.21.0.32'
+    #client_ip = '182.92.129.182'
+    #collision_ip = '10.10.3.84'
 
+    server_ip = '172.21.0.14'
     client_ip = '182.92.129.182'
-    collision_ip = '10.10.5.12'
+    collision_ip = '10.10.6.228'
 
     attack_bind_if = 'eth0'
     own_ip_prefix = '10.10.0.0'

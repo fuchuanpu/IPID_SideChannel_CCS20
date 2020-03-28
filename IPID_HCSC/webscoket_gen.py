@@ -50,7 +50,7 @@ def forge_rocket_chat_messege(forged_id, room_id, forged_message):
     return warp_json_str
 
 
-def get_websocket_messege(forged_id=101, room_id='NGbsMyFhDp9n6JnEx', forged_message='forged message'):
+def get_websocket_messege(forged_id=1001, room_id='NGbsMyFhDp9n6JnEx', forged_message='forged message'):
     forge_msg = forge_rocket_chat_messege(forged_id, room_id, forged_message)
 
     t_server = threading.Thread(target=run_websocket_server)

