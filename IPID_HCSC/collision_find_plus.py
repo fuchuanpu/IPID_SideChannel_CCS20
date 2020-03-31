@@ -166,7 +166,8 @@ class Collision_Finder_Plus:
                         self.result= found_str
                         self.__stop = True
                         self.__semaphore.release()
-                        print('--Found Collisison ' + ': ' + str(found_str))
+                        if self.verbose:
+                            print('--Found Collisison ' + ': ' + str(found_str))
 
                     add_set.append(Task(dt.addr, dt.count + 1))
 
