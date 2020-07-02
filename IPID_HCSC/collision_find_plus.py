@@ -46,6 +46,7 @@ class Collision_Finder_Plus:
 
         self.__semaphore = threading.Semaphore(1)
         self.__semaphore_ipid = threading.Semaphore(1)
+        self.__sleep_time = 0.5
 
         self.__task_list = []
         self.MX = 2
@@ -92,6 +93,7 @@ class Collision_Finder_Plus:
                          iface=self.my_if_name, count=2 * C, timeout=2, started_callback=
                          lambda: send(send_list, iface=self.my_if_name, verbose=False))
             self.__semaphore_ipid.release()
+            
             if len(pkts) != 2 * C:
                 time.sleep(self.__sleep_time)
             else:

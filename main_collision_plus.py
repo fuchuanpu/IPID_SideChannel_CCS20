@@ -7,8 +7,8 @@ from IPID_HCSC.collision_find_plus import Collision_Finder_Plus
 
 
 if __name__ == '__main__':
-    server_ip = '172.21.0.12'
-    victim_ip = '218.24.209.39'
+    server_ip = '172.21.0.15'
+    victim_ip = '182.92.129.182'
 
     attack_bind_if = 'eth0'
     

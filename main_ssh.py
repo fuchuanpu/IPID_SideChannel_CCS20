@@ -24,9 +24,9 @@ if __name__ == '__main__':
     #client_ip = '182.92.129.182'
     #collision_ip = '10.10.3.84'
 
-    server_ip = '172.21.0.14'
+    server_ip = '172.21.0.15'
     client_ip = '182.92.129.182'
-    collision_ip = '10.10.6.228'
+    collision_ip = '10.10.3.118'
 
     attack_bind_if = 'eth0'
     own_ip_prefix = '10.10.0.0'
